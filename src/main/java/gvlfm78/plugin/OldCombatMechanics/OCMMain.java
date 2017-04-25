@@ -28,6 +28,7 @@ import gvlfm78.plugin.OldCombatMechanics.module.ModuleGoldenApple;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleNoLapisEnchantments;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldBrewingStand;
+import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldEnderpearl;
 import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldToolDamage;
 import gvlfm78.plugin.OldCombatMechanics.module.ModulePlayerCollisions;
 import gvlfm78.plugin.OldCombatMechanics.module.ModulePlayerRegen;
@@ -144,6 +145,7 @@ public class OCMMain extends JavaPlugin {
 		ModuleLoader.AddModule(new ModuleDisableBowBoost(this));
 		ModuleLoader.AddModule(new ModuleProjectileKnockback(this));
 		ModuleLoader.AddModule(new ModuleNoLapisEnchantments(this));
+		ModuleLoader.AddModule(new ModuleOldEnderpearl(this));
 
 		getCommand("OldCombatMechanics").setExecutor(new OCMCommandHandler(this, this.getFile()));// Firing commands listener
 	}

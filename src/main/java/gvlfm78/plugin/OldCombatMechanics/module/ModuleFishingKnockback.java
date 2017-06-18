@@ -43,7 +43,7 @@ public class ModuleFishingKnockback extends Module {
 
 
 		Entity hitent = null;
-		
+
 		try{
 			hitent = e.getHitEntity();
 		}
@@ -57,7 +57,7 @@ public class ModuleFishingKnockback extends Module {
 				}
 			}
 		}
-		
+
 		if(hitent == null) return;
 		if(!(hitent instanceof Player)) return;
 
@@ -75,7 +75,7 @@ public class ModuleFishingKnockback extends Module {
 		double damage = module().getDouble("damage");
 		if(damage<0) damage = 0.2;
 
-		EntityDamageByEntityEvent event = makeEvent(rodder, player, damage);
+		EntityDamageEvent event = makeEvent(rodder, player, damage);
 		Bukkit.getPluginManager().callEvent(event);
 
 		if(module().getBoolean("checkCancelled") && event.isCancelled()){
@@ -85,9 +85,8 @@ public class ModuleFishingKnockback extends Module {
 				debug("You can't do that here!", rodder);
 				HandlerList hl = event.getHandlers();
 
-				for(RegisteredListener rl : hl.getRegisteredListeners()){
+				for(RegisteredListener rl : hl.getRegisteredListeners())
 					debug("Plugin Listening: " + rl.getPlugin().getName(), rodder);
-				}
 			}
 
 			return; 
@@ -101,7 +100,17 @@ public class ModuleFishingKnockback extends Module {
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private EntityDamageByEntityEvent makeEvent(Player rodder, Player player, double damage) {
-		return new EntityDamageByEntityEvent(rodder, player, EntityDamageEvent.DamageCause.ENTITY_ATTACK, new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)), new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
+	private EntityDamageEvent makeEvent(Player rodder, Player player, double damage) {
+
+		if (module().getBoolean("useEntityDamageEvent"))
+			return new EntityDamageEvent(player,
+					EntityDamageEvent.DamageCause.PROJECTILE,
+					new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
+					new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
+		else
+			return new EntityDamageByEntityEvent(rodder, player,
+					EntityDamageEvent.DamageCause.PROJECTILE,
+					new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, damage)),
+					new EnumMap(ImmutableMap.of(EntityDamageEvent.DamageModifier.BASE, Functions.constant(damage))));
 	}
 }

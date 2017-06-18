@@ -54,11 +54,11 @@ public class ModuleSwordBlocking extends Module {
 		if (e.getItem() == null) return;
 
 		Action action = e.getAction();
-		
+
 		if(!action.equals(Action.RIGHT_CLICK_AIR) && !action.equals(Action.RIGHT_CLICK_BLOCK)) return;
-		
+
 		if (action.equals(Action.RIGHT_CLICK_BLOCK) && excluded.contains(e.getClickedBlock().getType())) return;
-		
+
 		Player p = e.getPlayer();
 		World world = p.getWorld();
 
@@ -82,7 +82,7 @@ public class ModuleSwordBlocking extends Module {
 
 	}
 	@EventHandler(priority = EventPriority.HIGHEST)
-	public void onProjectileHit(EntityDamageByEntityEvent e){
+	public void onHit(EntityDamageByEntityEvent e){
 		Entity ent = e.getEntity();
 
 		if(ent != null && ent instanceof Player){
@@ -91,14 +91,14 @@ public class ModuleSwordBlocking extends Module {
 				//If it's a player blocking with their sword
 				//Instead of reducing damage to 33% just remove half a heart
 
-				double damageReduction = e.getDamage(); //This would mean blocking all damage
+				double damageReduction = e.getDamage(); //Reducing by this would mean blocking all damage
 
 				//Reduce the damage by 1/2 a heart if it doesn't result in the damage being negative
-				//Otherwise reduce damage entirely
+				//Otherwise remove damage entirely
 				if((damageReduction - 1) >= 0)
-					damageReduction = -1;
+					damageReduction = -1; //-1 because it is a reduction value
 
-				//If the damage was not reduced at all from blocking they must have not been hit head-on, so don't reduce damage
+				//Only reduce damage if they were hit head on, i.e. the shield blocked some of the damage
 				if(e.getDamage(DamageModifier.BLOCKING) > 0)			
 					e.setDamage(DamageModifier.BLOCKING, damageReduction);
 			}
@@ -117,17 +117,21 @@ public class ModuleSwordBlocking extends Module {
 
 	@EventHandler(priority = EventPriority.HIGHEST)
 	public void onPlayerDeath(PlayerDeathEvent e) {
-
 		if (!isBlocking(e.getEntity().getUniqueId())) return;
 
 		Player p = e.getEntity();
 		UUID id = p.getUniqueId();
 
-		e.getDrops().remove(SHIELD);
-		e.getDrops().add(storedOffhandItems.get(id));
+		e.getDrops().replaceAll(item -> {
+			if(item.getType().equals(Material.SHIELD)){
+				item = storedOffhandItems.get(id);
+			}
+
+			return item;
+		}
+				);
 
 		storedOffhandItems.remove(id);
-
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST)

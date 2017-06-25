@@ -1,5 +1,6 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BrewingStand;
@@ -29,7 +30,19 @@ public class ModuleOldBrewingStand extends Module {
 		if(!isEnabled(e.getPlayer().getWorld())) return;
 
 		Inventory inv = e.getInventory();
-		Block block = inv.getLocation().getBlock();
+		
+		if(inv == null) return;
+
+		Location loc = null;
+		
+		try{
+		loc = inv.getLocation();
+		}
+		catch(Exception ex){}
+		
+		if(loc == null) return;
+		
+		Block block = loc.getBlock();
 
 		if(!block.getType().equals(Material.BREWING_STAND)) return;
 

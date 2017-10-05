@@ -1,21 +1,17 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 import org.bukkit.DyeColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.enchantment.EnchantItemEvent;
-import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.inventory.InventoryOpenEvent;
-import org.bukkit.event.inventory.InventoryType;
+import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.EnchantingInventory;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.material.Dye;
-
-import gvlfm78.plugin.OldCombatMechanics.OCMMain;
 
 public class ModuleNoLapisEnchantments extends Module {
 
@@ -28,6 +24,9 @@ public class ModuleNoLapisEnchantments extends Module {
 	public void onEnchant(EnchantItemEvent e) {
 		Block block = e.getEnchantBlock();
 		if(!isEnabled(block.getWorld())) return;
+
+		if(!hasPermission(e.getEnchanter())) return;
+
 		EnchantingInventory ei = (EnchantingInventory) e.getInventory(); //Not checking here because how else would event be fired?
 		ei.setSecondary(getLapis());
 	}
@@ -38,10 +37,12 @@ public class ModuleNoLapisEnchantments extends Module {
 
 		if(!e.getInventory().getType().equals(InventoryType.ENCHANTING)) return;
 
+		if(!hasPermission((Player) e.getWhoClicked())) return;
+
 		ItemStack item = e.getCurrentItem();
 		if(item!=null && ( 
-				(item.getType().equals(Material.INK_SACK) && e.getRawSlot() == 1) || 
-				(e.getCursor().getType().equals(Material.INK_SACK) && e.getClick().equals(ClickType.DOUBLE_CLICK)) ) )
+				(item.getType() == Material.INK_SACK && e.getRawSlot() == 1) ||
+				(e.getCursor() != null && e.getCursor().getType() == Material.INK_SACK && e.getClick() == ClickType.DOUBLE_CLICK) ) )
 			e.setCancelled(true);
 	}
 
@@ -50,10 +51,9 @@ public class ModuleNoLapisEnchantments extends Module {
 		if(!isEnabled(e.getPlayer().getWorld())) return;
 
 		Inventory inv = e.getInventory();
-		if(inv.getType().equals(InventoryType.ENCHANTING)){
+		if(inv == null || inv.getType() != InventoryType.ENCHANTING || !hasPermission((Player) e.getPlayer())) return;
 			EnchantingInventory ei = (EnchantingInventory) inv;
 			ei.setSecondary(new ItemStack(Material.AIR));
-		}
 	}
 
 	@EventHandler
@@ -61,16 +61,17 @@ public class ModuleNoLapisEnchantments extends Module {
 		if(!isEnabled(e.getPlayer().getWorld())) return;
 
 		Inventory inv = e.getInventory();
-		if(inv.getType().equals(InventoryType.ENCHANTING))
+		if(inv == null || inv.getType() != InventoryType.ENCHANTING || !hasPermission((Player) e.getPlayer())) return;
 			( (EnchantingInventory) inv).setSecondary(getLapis());
 	}
 
 	private ItemStack getLapis(){
-		Dye l = new Dye();
-		l.setColor(DyeColor.BLUE);
-		ItemStack lapis = l.toItemStack();
-		lapis.setAmount(64);
-		return lapis;
+		Dye dye = new Dye();
+		dye.setColor(DyeColor.BLUE);
+		return dye.toItemStack(64);
 	}
 
+	private boolean hasPermission(Player player){
+		return !isSettingEnabled("usePermission") || player.hasPermission("oldcombatmechanics.nolapis");
+	}
 }

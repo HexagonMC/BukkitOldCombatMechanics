@@ -1,8 +1,12 @@
 package gvlfm78.plugin.OldCombatMechanics.module;
 
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -16,9 +20,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
-import gvlfm78.plugin.OldCombatMechanics.OCMMain;
-import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
-
 public class ModuleDisableElytra extends Module {
 
 	public static ModuleSwordBlocking INSTANCE;
@@ -29,21 +30,31 @@ public class ModuleDisableElytra extends Module {
 
 	@EventHandler (priority = EventPriority.HIGHEST)
 	public void onInventoryClick(InventoryClickEvent e){
-		if(!isEnabled(e.getWhoClicked().getWorld())) return;
+		HumanEntity human = e.getWhoClicked();
+		if(!isEnabled(human.getWorld())) return;
 
-		InventoryType type = e.getInventory().getType(); //Only if they're in their inventory, not chests etc.
-		if(!type.equals(InventoryType.CRAFTING) && !type.equals(InventoryType.PLAYER)) return;
+		if(!(human instanceof Player)) return;
+
+		Player p = (Player) human;
+
+		if(p.getGameMode() == GameMode.CREATIVE) return;
+
+		InventoryType type = e.getInventory().getType(); // Only if they're in their inventory, not chests etc.
+		if(type != InventoryType.CRAFTING && type != InventoryType.PLAYER) return;
+
+		ItemStack cursor = e.getCursor();
+		ItemStack currentItem = e.getCurrentItem();
+
+		if((cursor != null && cursor.getType() != Material.ELYTRA) && (currentItem != null && currentItem.getType() != Material.ELYTRA)) return;
 
 		if(e.getSlot() == 38){
 			e.setCancelled(true);
+			//((Player) e.getWhoClicked()).updateInventory();
 			return;
 		}
 
-		if(!e.getCursor().getType().equals(Material.ELYTRA) && !e.getCurrentItem().getType().equals(Material.ELYTRA)) return;
-
 		//Stop shift clicking elytra in
-		ClickType ct = e.getClick();
-		if( !ct.equals(ClickType.SHIFT_LEFT) && !ct.equals(ClickType.SHIFT_RIGHT)) return;
+		if(e.getClick() != ClickType.SHIFT_LEFT && e.getClick() != ClickType.SHIFT_RIGHT) return;
 
 		e.setCancelled(true);
 	}
@@ -55,9 +66,9 @@ public class ModuleDisableElytra extends Module {
 
 		//Must not be able to right click while holding it to wear it
 		Action a = e.getAction();
-		if(a != Action.RIGHT_CLICK_AIR && a != Action.RIGHT_CLICK_BLOCK) return;
+        if(a != Action.RIGHT_CLICK_AIR && a != Action.RIGHT_CLICK_BLOCK) return;
 
-		if(!e.getMaterial().equals(Material.ELYTRA)) return;
+		if(e.getMaterial() != Material.ELYTRA) return;
 
 		Block block = e.getClickedBlock();
 		if(block != null && Config.getInteractiveBlocks().contains(block.getType())) return;
@@ -71,7 +82,7 @@ public class ModuleDisableElytra extends Module {
 	public void onDrag(InventoryDragEvent e){
 		if(!isEnabled(e.getWhoClicked().getWorld())) return;
 
-		if(!e.getOldCursor().getType().equals(Material.ELYTRA)) return;
+		if(e.getOldCursor() == null || (e.getCursor() != null && e.getCursor().getType() != Material.ELYTRA)) return;
 
 		if(!e.getInventorySlots().contains(38)) return;
 
@@ -88,13 +99,13 @@ public class ModuleDisableElytra extends Module {
 
 		ItemStack chestplate = inv.getChestplate();
 
-		if(!chestplate.getType().equals(Material.ELYTRA)) return;
+		if(chestplate == null || chestplate.getType() != Material.ELYTRA) return;
 
 		inv.setChestplate(new ItemStack(Material.AIR));
 
 		if(inv.firstEmpty() != -1)
 			inv.addItem(chestplate);
-		else 
+		else
 			w.dropItem(p.getLocation(), chestplate);
 	}
 }

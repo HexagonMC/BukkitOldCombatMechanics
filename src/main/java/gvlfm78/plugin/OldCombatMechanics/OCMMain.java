@@ -1,65 +1,26 @@
 package gvlfm78.plugin.OldCombatMechanics;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.logging.Logger;
-
-import org.bstats.Metrics;
+import com.codingforcookies.armourequip.ArmourListener;
+import gvlfm78.plugin.OldCombatMechanics.module.*;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
+import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
+import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
-import com.codingforcookies.armourequip.ArmourListener;
-
-import gvlfm78.plugin.OldCombatMechanics.module.Module;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleAttackCooldown;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableBowBoost;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableElytra;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableEnderpearlCooldown;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableProjectileRandomness;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleFishingKnockback;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleGoldenApple;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleNoLapisEnchantments;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldBrewingStand;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldEnderpearl;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldToolDamage;
-import gvlfm78.plugin.OldCombatMechanics.module.ModulePlayerCollisions;
-import gvlfm78.plugin.OldCombatMechanics.module.ModulePlayerRegen;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleProjectileKnockback;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleShieldCrafting;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleSwordBlocking;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleSwordSweep;
-import gvlfm78.plugin.OldCombatMechanics.utilities.Config;
-import gvlfm78.plugin.OldCombatMechanics.utilities.Messenger;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.logging.Logger;
 
 public class OCMMain extends JavaPlugin {
 
 	Logger logger = getLogger();
 	private OCMConfigHandler CH = new OCMConfigHandler(this);
-	private OCMTask task = null;
+	//private OCMTask task = null;
 	private OCMSweepTask sweepTask = null;
-	private ItemStack gapple = new ItemStack(Material.GOLDEN_APPLE, 1, (short) 1);
-	
-	private ShapedRecipe r;
-	
-	@SuppressWarnings("deprecation")
-	public OCMMain(){
-		try{ 
-			r = new ShapedRecipe(new NamespacedKey(this, "MINECRAFT"), gapple);
-		}
-		catch(NoClassDefFoundError e) {
-			r = new ShapedRecipe(gapple);
-		}
-		r.shape("ggg", "gag", "ggg").setIngredient('g', Material.GOLD_BLOCK).setIngredient('a', Material.APPLE);
-	}
 
 	@Override
 	public void onEnable() {
@@ -83,17 +44,19 @@ public class OCMMain extends JavaPlugin {
 		// Initialise the team if it doesn't already exist
 		createTeam();
 
-		// Disabling player collisions
-		if (Config.moduleEnabled("disable-player-collisions"))
+		// Disabling player collision
+		/*if (Config.moduleEnabled("disable-player-collision"))
 			// Even though it says "restart", it works for just starting it too
-			restartTask();
+			restartTask();*/
+
+		//Remove scoreboard
+		String name = "ocmInternal";
+		Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+		scoreboard.getTeam(name).unregister();
 
 		if (Config.moduleEnabled("disable-sword-sweep"))
 			//Start up anti sword sweep attack task
 			restartSweepTask();
-
-		// Register crafting recipes
-		registerCrafting();
 
 		// MCStats Metrics
 		try {
@@ -102,21 +65,20 @@ public class OCMMain extends JavaPlugin {
 		} catch (IOException e) {
 			// Failed to submit the stats
 		}
-		
+
 		//BStats Metrics
 		Metrics metrics = new Metrics(this);
-		
-		metrics.addCustomChart(new Metrics.SimpleBarChart("enabled_modules") {
-			@Override
-			public HashMap<String, Integer> getValues(HashMap<String, Integer> values) {
-				for(Module module : ModuleLoader.getEnabledModules().keySet())
-					if(module.isEnabled()) values.put(module.toString(), 1);
-				return values;
-			}
-		});
+
+		metrics.addCustomChart(new Metrics.SimpleBarChart("enabled_modules", () -> {
+			HashMap<String, Integer> values = new HashMap<>();
+			ModuleLoader.getEnabledModules().keySet().forEach(module -> {
+				if(module.isEnabled()) values.put(module.toString(), 1);
+			});
+			return values;
+		}));
 
 		// Logging to console the enabling of OCM
-		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled correctly");
+		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been enabled");
 
 	}
 
@@ -125,7 +87,7 @@ public class OCMMain extends JavaPlugin {
 
 		PluginDescriptionFile pdfFile = this.getDescription();
 
-		if (task != null) task.cancel();
+		//if (task != null) task.cancel();
 
 		// Logging to console the disabling of OCM
 		logger.info(pdfFile.getName() + " v" + pdfFile.getVersion() + " has been disabled");
@@ -140,7 +102,7 @@ public class OCMMain extends JavaPlugin {
 		ModuleLoader.AddModule(new ArmourListener(this));
 		ModuleLoader.AddModule(new ModuleAttackCooldown(this));
 		ModuleLoader.AddModule(new ModulePlayerCollisions(this));
-		
+
 		//Apparently listeners registered after get priority
 		ModuleLoader.AddModule(new ModuleOldToolDamage(this));
 		ModuleLoader.AddModule(new ModuleSwordSweep(this));
@@ -150,7 +112,7 @@ public class OCMMain extends JavaPlugin {
 		ModuleLoader.AddModule(new ModulePlayerRegen(this));
 		ModuleLoader.AddModule(new ModuleSwordBlocking(this));
 		ModuleLoader.AddModule(new ModuleOldArmourStrength(this));
-		ModuleLoader.AddModule(new ModuleShieldCrafting(this));
+		ModuleLoader.AddModule(new ModuleDisableCrafting(this));
 		ModuleLoader.AddModule(new ModuleDisableOffHand(this));
 		ModuleLoader.AddModule(new ModuleOldBrewingStand(this));
 		ModuleLoader.AddModule(new ModuleDisableElytra(this));
@@ -192,7 +154,7 @@ public class OCMMain extends JavaPlugin {
 		return CH.doesConfigymlExist();
 	}
 
-	public void restartTask() {
+	/*public void restartTask() {
 
 		if (task == null)
 			task = new OCMTask(this);
@@ -201,14 +163,14 @@ public class OCMMain extends JavaPlugin {
 			task = new OCMTask(this);
 		}
 
-		double minutes = getConfig().getDouble("disable-player-collisions.collision-check-frequency");
+		double minutes = getConfig().getDouble("disable-player-collision.collision-check-frequency");
 
 		if (minutes > 0)
 			task.runTaskTimerAsynchronously(this, 0, (long) minutes * 60 * 20);
 		else
 			task.runTaskTimerAsynchronously(this, 0, 60 * 20);
 
-	}
+	}*/
 
 	public void restartSweepTask() {
 		if (sweepTask == null)
@@ -222,13 +184,5 @@ public class OCMMain extends JavaPlugin {
 
 	public OCMSweepTask sweepTask() {
 		return sweepTask;
-	}
-
-	private void registerCrafting() {
-
-		if (!Config.moduleSettingEnabled("old-golden-apples", "no-conflict-mode")) {
-			if (Bukkit.getRecipesFor(gapple).size() == 0)
-				Bukkit.addRecipe(r);
-		}
 	}
 }

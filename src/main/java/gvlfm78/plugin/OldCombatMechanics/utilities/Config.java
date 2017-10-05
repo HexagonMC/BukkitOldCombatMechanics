@@ -1,9 +1,8 @@
 package gvlfm78.plugin.OldCombatMechanics.utilities;
 
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
-
+import gvlfm78.plugin.OldCombatMechanics.ModuleLoader;
+import gvlfm78.plugin.OldCombatMechanics.OCMMain;
+import gvlfm78.plugin.OldCombatMechanics.module.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -14,11 +13,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
-import gvlfm78.plugin.OldCombatMechanics.ModuleLoader;
-import gvlfm78.plugin.OldCombatMechanics.OCMMain;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleDisableOffHand;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleGoldenApple;
-import gvlfm78.plugin.OldCombatMechanics.module.ModuleOldArmourStrength;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by Rayzr522 on 6/14/16.
@@ -28,20 +25,20 @@ public class Config {
 
 	private static OCMMain plugin;
 	private static FileConfiguration config;
-	private static ArrayList<Material> interactive = new ArrayList<Material>();
+	private static List<Material> interactive = new ArrayList<>();
 
 	public static void Initialise(OCMMain plugin) {
 
 		Config.plugin = plugin;
 		config = plugin.getConfig();
 
-		if (!checkConfigVersion())
-			load();
-
 		reload();
 	}
 
-
+	/**
+	 *
+	 * @return Whether config was changed or not
+	 */
 	private static boolean checkConfigVersion() {
 		YamlConfiguration defaultConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(plugin.getResource("config.yml")));
 
@@ -67,9 +64,16 @@ public class Config {
 
 		checkConfigVersion();
 
-		plugin.restartTask(); //Restart no-collisions check
+		//plugin.restartTask(); //Restart no-collision check
 		plugin.restartSweepTask(); //Restart sword sweep check
-		load();
+
+		Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
+
+		if(Config.moduleEnabled("old-tool-damage"))
+			WeaponDamages.Initialise(plugin); //Reload weapon damages from config
+
+		if(Config.moduleEnabled("old-armour-strength"))
+			ArmourValues.Initialise(plugin); //Reload armour values from config
 
 		//Setting correct attack speed and armour values for online players
 		for(World world : Bukkit.getWorlds()){
@@ -88,33 +92,30 @@ public class Config {
 				AttributeInstance attribute = player.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 				double baseValue = attribute.getBaseValue();
 
-				if(baseValue!=GAS){
+				if(baseValue != GAS){
 					attribute.setBaseValue(GAS);
 					player.saveData();
 				}
 
 				//Setting armour values
-				ModuleOldArmourStrength moas = new ModuleOldArmourStrength(plugin);
-				moas.setArmourAccordingly(player, isArmourEnabled);
+				ModuleOldArmourStrength.setArmourAccordingly(player, isArmourEnabled);
 			}
 		}
-		if(Config.moduleEnabled("disable-offhand"))
-			ModuleDisableOffHand.INSTANCE.reloadList();
-		if(Config.moduleEnabled("old-golden-apples"))
-			ModuleGoldenApple.INSTANCE.reloadRecipes();
-		if(Config.moduleEnabled("sword-blocking") || Config.moduleEnabled("disable-elytra"))
-			reloadInteractiveBlocks();
-	}
-
-	private static void load() {
-
-		Messenger.DEBUG_ENABLED = config.getBoolean("debug.enabled");
-
-		WeaponDamages.Initialise(plugin); //Reload weapon damages from config
-		ArmourValues.Initialise(plugin); //Reload armour values from config
 
 		ModuleLoader.ToggleModules();
 
+		if(Config.moduleEnabled("disable-offhand"))
+			ModuleDisableOffHand.INSTANCE.reloadList();
+		if(Config.moduleEnabled("old-golden-apples")) {
+			ModuleGoldenApple.INSTANCE.reloadRecipes();
+			ModuleGoldenApple.INSTANCE.registerCrafting();
+		}
+		if(Config.moduleEnabled("sword-blocking") || Config.moduleEnabled("disable-elytra"))
+			reloadInteractiveBlocks();
+		if(Config.moduleEnabled("sword-blocking"))
+			ModuleSwordBlocking.INSTANCE.reload();
+		if(moduleEnabled("disable-crafting"))
+			ModuleDisableCrafting.INSTANCE.reload();
 	}
 
 	public static boolean moduleEnabled(String name, World world) {
@@ -180,8 +181,15 @@ public class Config {
 		}
 	}
 
-	public static ArrayList<Material> getInteractiveBlocks(){
+	public static List<Material> getInteractiveBlocks(){
 		return interactive;
 	}
 
+	/**
+	 * Only use if you can't access config through plugin instance
+	 * @return config.yml instance
+	 */
+	public static FileConfiguration getConfig(){
+		return plugin.getConfig();
+	}
 }
